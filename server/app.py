@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, jsonify, request, make_response, abort
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
 
@@ -36,6 +36,7 @@ class Plants(Resource):
         db.session.commit()
 
         return make_response(new_plant.to_dict(), 201)
+    
 
 
 api.add_resource(Plants, '/plants')
@@ -46,6 +47,34 @@ class PlantByID(Resource):
     def get(self, id):
         plant = Plant.query.filter_by(id=id).first().to_dict()
         return make_response(jsonify(plant), 200)
+    
+    def patch(self, id):
+        plant = Plant.query.filter_by(id=id).first()
+        if not plant:
+            abort(404, "Plant Not Found :(")
+
+        data = request.get_json()
+        for key in data:
+            setattr(plant, key, data[key])
+
+        db.session.add(plant)
+        db.session.commit()
+
+        plant_dict = plant.to_dict()
+        respose = make_response(plant_dict, 200)
+        return respose
+
+    def delete(self, id):
+        plant = Plant.query.filter_by(id=id).first()
+        if not plant:
+            abort(404, "Plant Not Found :(")
+
+        db.session.delete(plant)
+        db.session.commit()
+
+        response = make_response("", 204)
+        return response
+        
 
 
 api.add_resource(PlantByID, '/plants/<int:id>')
